@@ -9,8 +9,9 @@ import (
 func main() {
 	files := os.Args[1:]
 	counts := make(map[string]int)
+	foundIn := make(map[string][]string)
 	if len(files) == 0 {
-		countLine(os.Stdin, counts)
+		countLine(os.Stdin, counts, foundIn)
 	} else {
 		for _, arg := range files {
 			f, err := os.Open(arg)
@@ -18,20 +19,33 @@ func main() {
 				fmt.Fprintf(os.Stderr, "dup2: %v\n", err)
 				continue
 			}
-			countLine(f, counts)
+			countLine(f, counts, foundIn)
 			f.Close()
 		}
 	}
 	for line, n := range counts {
 		if n > 1 {
-			fmt.Printf("%s\t%d\n", line, n)
+			fmt.Printf("%v\t%s\t%d\n", foundIn[line], line, n)
 		}
 	}
 }
 
-func countLine(f *os.File, counts map[string]int) {
+func countLine(f *os.File, counts map[string]int, foundIn map[string][]string) {
 	input := bufio.NewScanner(f)
 	for input.Scan() {
-		counts[input.Text()]++
+		line := input.Text()
+		counts[line]++
+		if !in(f.Name(), foundIn[line]) {
+			foundIn[input.Text()] = append(foundIn[line], f.Name())
+		}
 	}
+}
+
+func in(filename string, strings []string) bool {
+	for _,s := range strings {
+		if s==filename {
+			return true
+		}
+	}
+	return false
 }
